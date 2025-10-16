@@ -66,6 +66,79 @@ def load_data():
     df['Quarter'] = df['Date'].dt.quarter
     return df
 
+# Data validation function
+def validate_data_format(df):
+    """Validate that uploaded data has required columns and format"""
+    required_columns = ['Date', 'Company', 'Revenue', 'NetIncome', 'OperatingExpenses', 'MarketCap', 'StockPrice', 'PERatio']
+    errors = []
+    
+    # Check if all required columns exist
+    missing_columns = set(required_columns) - set(df.columns)
+    if missing_columns:
+        errors.append(f"Missing required columns: {', '.join(missing_columns)}")
+    
+    if not errors:
+        # Check data types and format
+        try:
+            # Try to convert Date column
+            pd.to_datetime(df['Date'])
+        except:
+            errors.append("Date column must be in a valid date format (YYYY-MM-DD)")
+        
+        # Check numeric columns
+        numeric_columns = ['Revenue', 'NetIncome', 'OperatingExpenses', 'MarketCap', 'StockPrice', 'PERatio']
+        for col in numeric_columns:
+            if col in df.columns:
+                try:
+                    pd.to_numeric(df[col], errors='raise')
+                except:
+                    errors.append(f"Column '{col}' must contain numeric values only")
+    
+    return errors
+
+# Process uploaded file
+def process_uploaded_file(uploaded_file):
+    """Process uploaded CSV or Excel file"""
+    try:
+        if uploaded_file.name.endswith('.csv'):
+            df = pd.read_csv(uploaded_file)
+        elif uploaded_file.name.endswith(('.xlsx', '.xls')):
+            df = pd.read_excel(uploaded_file)
+        else:
+            return None, ["File must be CSV or Excel format"]
+        
+        # Validate data format
+        validation_errors = validate_data_format(df)
+        if validation_errors:
+            return None, validation_errors
+        
+        # Process the data
+        df['Date'] = pd.to_datetime(df['Date'])
+        df['Year'] = df['Date'].dt.year
+        df['Quarter'] = df['Date'].dt.quarter
+        
+        return df, []
+    except Exception as e:
+        return None, [f"Error processing file: {str(e)}"]
+
+# Save data function
+def save_data_to_file(df, backup_original=True):
+    """Save dataframe to CSV file with optional backup"""
+    try:
+        if backup_original and os.path.exists('data/financial_data.csv'):
+            # Create backup of original file
+            backup_filename = f"data/financial_data_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+            original_df = pd.read_csv('data/financial_data.csv')
+            original_df.to_csv(backup_filename, index=False)
+        
+        # Save new data
+        df_to_save = df.copy()
+        df_to_save = df_to_save.drop(['Year', 'Quarter'], axis=1, errors='ignore')
+        df_to_save.to_csv('data/financial_data.csv', index=False)
+        return True, "Data saved successfully!"
+    except Exception as e:
+        return False, f"Error saving data: {str(e)}"
+
 # Company color mapping
 COMPANY_COLORS = {
     'Meta': '#1877F2',
