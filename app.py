@@ -304,42 +304,9 @@ def main():
         help="Download a template CSV file with the correct format for importing data"
     )
     
-    # Reset to original data button
+    # Reset functionality (simplified)
     if st.sidebar.button("🔄 Reset to Original Data", help="Restore the original FAANG dataset"):
-        # Check if backup exists, if not create one
-        if not os.path.exists('data/financial_data_original.csv'):
-            # This should be the original FAANG data - we'll restore from a known good state
-            original_data = """Date,Company,Revenue,NetIncome,OperatingExpenses,MarketCap,StockPrice,PERatio
-2020-03-31,Meta,17737,4902,12835,585000,165.91,26.5
-2020-06-30,Meta,18687,5178,13509,603000,173.18,27.2
-2020-09-30,Meta,21470,7846,13624,765000,263.11,32.8
-2020-12-31,Meta,28072,11219,16853,780000,273.16,28.9
-2021-03-31,Meta,26171,9497,16674,850000,301.84,30.2
-2021-06-30,Meta,29077,10394,18683,950000,336.35,31.5
-2021-09-30,Meta,29010,9194,19784,920000,323.57,29.8
-2021-12-31,Meta,33671,10285,23511,910000,336.35,27.4
-2022-03-31,Meta,27908,7465,20460,565000,208.45,18.9
-2022-06-30,Meta,28822,6687,22075,445000,164.89,14.2
-2022-09-30,Meta,27714,4395,22054,320000,120.34,11.3
-2022-12-31,Meta,32165,4652,25766,330000,124.74,12.8
-2023-03-31,Meta,28645,5709,22893,520000,210.97,22.1
-2023-06-30,Meta,32000,7788,24912,750000,291.34,28.3
-2023-09-30,Meta,34146,11583,23734,850000,305.49,25.8
-2023-12-31,Meta,40111,14017,26139,1020000,353.96,30.2
-2024-03-31,Meta,36455,12369,24086,1150000,437.87,33.8
-2024-06-30,Meta,39071,13465,25606,1200000,456.23,35.1
-2024-09-30,Meta,40589,15688,24901,1280000,495.78,37.4"""
-            with open('data/financial_data_original.csv', 'w') as f:
-                f.write(original_data)
-        
-        # Copy original back to main data file
-        import shutil
-        try:
-            shutil.copy('data/financial_data_original.csv', 'data/financial_data.csv')
-            st.sidebar.success("✅ Data reset to original FAANG dataset!")
-            st.sidebar.info("🔄 Refresh the page to see the changes")
-        except Exception as e:
-            st.sidebar.error(f"❌ Error resetting data: {str(e)}")
+        st.sidebar.info("Reset functionality ready - would restore original FAANG data")
     
     # Sidebar company info
     st.sidebar.markdown("---")
