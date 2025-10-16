@@ -308,6 +308,14 @@ def main():
     These companies dominate the tech industry and have significant market influence.
     """)
     
+    # Show any import status messages
+    if 'import_success' in st.session_state:
+        if st.session_state.import_success:
+            st.success("✅ Data imported successfully! The dashboard has been updated with your new data.")
+        else:
+            st.error("❌ Import failed. Please check your file format and try again.")
+        del st.session_state.import_success
+    
     # Main dashboard
     if filtered_df.empty:
         st.warning("⚠️ No data available for the selected filters. Please adjust your selections.")
