@@ -202,6 +202,98 @@ def main():
     else:
         filtered_df = df[df['Company'].isin(companies)]
     
+    # Import Data Section
+    st.sidebar.markdown("---")
+    st.sidebar.header("📥 Import Data")
+    
+    uploaded_file = st.sidebar.file_uploader(
+        "Upload Financial Data",
+        type=['csv', 'xlsx', 'xls'],
+        help="Upload a CSV or Excel file with financial data. Required columns: Date, Company, Revenue, NetIncome, OperatingExpenses, MarketCap, StockPrice, PERatio"
+    )
+    
+    if uploaded_file is not None:
+        # Process the uploaded file
+        new_df, errors = process_uploaded_file(uploaded_file)
+        
+        if errors:
+            st.sidebar.error("❌ File validation errors:")
+            for error in errors:
+                st.sidebar.error(f"• {error}")
+        else:
+            st.sidebar.success("✅ File validation passed!")
+            
+            # Show preview
+            with st.sidebar.expander("📋 Preview Data", expanded=False):
+                st.dataframe(new_df.head(), use_container_width=True)
+            
+            # Import options
+            st.sidebar.subheader("Import Options")
+            import_mode = st.sidebar.radio(
+                "Choose import mode:",
+                ["Replace existing data", "Append to existing data"],
+                help="Replace: Overwrites current data. Append: Adds to current data."
+            )
+            
+            if st.sidebar.button("🚀 Import Data", type="primary"):
+                if import_mode == "Replace existing data":
+                    final_df = new_df
+                else:
+                    # Append mode - combine with existing data
+                    original_df = load_data()
+                    # Remove Year and Quarter columns for combining
+                    original_clean = original_df.drop(['Year', 'Quarter'], axis=1, errors='ignore')
+                    new_clean = new_df.drop(['Year', 'Quarter'], axis=1, errors='ignore')
+                    final_df = pd.concat([original_clean, new_clean], ignore_index=True)
+                    final_df = final_df.drop_duplicates()
+                    # Re-add computed columns
+                    final_df['Date'] = pd.to_datetime(final_df['Date'])
+                    final_df['Year'] = final_df['Date'].dt.year
+                    final_df['Quarter'] = final_df['Date'].dt.quarter
+                
+                # Save the data
+                success, message = save_data_to_file(final_df)
+                if success:
+                    st.sidebar.success(f"✅ {message}")
+                    st.sidebar.info("🔄 Refresh the page to see updated data")
+                    st.sidebar.balloons()
+                else:
+                    st.sidebar.error(f"❌ {message}")
+    
+    # Data Management Section
+    st.sidebar.markdown("---")
+    st.sidebar.header("🔧 Data Management")
+    
+    # Show current data info
+    current_df = load_data()
+    st.sidebar.info(f"""
+    **Current Dataset:**
+    • Records: {len(current_df):,}
+    • Companies: {current_df['Company'].nunique()}
+    • Date Range: {current_df['Date'].min().strftime('%Y-%m-%d')} to {current_df['Date'].max().strftime('%Y-%m-%d')}
+    """)
+    
+    # Download template
+    template_df = pd.DataFrame({
+        'Date': ['2024-12-31'],
+        'Company': ['Example Corp'],
+        'Revenue': [50000],
+        'NetIncome': [10000],
+        'OperatingExpenses': [30000],
+        'MarketCap': [500000],
+        'StockPrice': [150.00],
+        'PERatio': [25.0]
+    })
+    
+    csv_template = template_df.to_csv(index=False)
+    st.sidebar.download_button(
+        label="📄 Download Template CSV",
+        data=csv_template,
+        file_name="financial_data_template.csv",
+        mime="text/csv",
+        help="Download a template CSV file with the correct format for importing data"
+    )
+    
     # Sidebar company info
     st.sidebar.markdown("---")
     st.sidebar.header("ℹ️ About FAANG")
