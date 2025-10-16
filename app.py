@@ -25,31 +25,22 @@ st.markdown("""
         text-align: center;
         margin-bottom: 2rem;
     }
-    .metric-card {
-        background-color: #f0f2f6;
-        padding: 1rem;
-        border-radius: 0.5rem;
-        text-align: center;
-    }
     .stMetric {
         background-color: #f0f2f6;
         padding: 1.5rem;
         border-radius: 0.5rem;
     }
-    /* Make metric labels more prominent */
     .stMetric label {
         font-size: 1.1rem !important;
         font-weight: 600 !important;
         color: #1f1f1f !important;
     }
-    /* Make metric values stand out significantly more */
     .stMetric [data-testid="stMetricValue"] {
         font-size: 2.5rem !important;
         font-weight: 800 !important;
         color: #0e4c92 !important;
         text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
     }
-    /* Style metric delta (if present) */
     .stMetric [data-testid="stMetricDelta"] {
         font-size: 1rem !important;
         font-weight: 600 !important;
@@ -191,17 +182,6 @@ def main():
         }[x]
     )
     
-    # Filter data
-    if len(date_range) == 2:
-        start_date, end_date = date_range
-        filtered_df = df[
-            (df['Company'].isin(companies)) &
-            (df['Date'].dt.date >= start_date) &
-            (df['Date'].dt.date <= end_date)
-        ]
-    else:
-        filtered_df = df[df['Company'].isin(companies)]
-    
     # Import Data Section
     st.sidebar.markdown("---")
     st.sidebar.header("📥 Import Data")
@@ -304,31 +284,16 @@ def main():
         help="Download a template CSV file with the correct format for importing data"
     )
     
-    # Reset functionality (simplified)
-    if st.sidebar.button("🔄 Reset to Original Data", help="Restore the original FAANG dataset"):
-        st.sidebar.info("Reset functionality ready - would restore original FAANG data")
-    
-    # Sidebar company info
-    st.sidebar.markdown("---")
-    st.sidebar.header("ℹ️ About FAANG")
-    st.sidebar.markdown("""
-    **FAANG** represents five major tech companies:
-    - **Meta** (Facebook)
-    - **Apple**
-    - **Amazon**
-    - **Netflix**
-    - **Alphabet** (Google)
-    
-    These companies dominate the tech industry and have significant market influence.
-    """)
-    
-    # Show any import status messages
-    if 'import_success' in st.session_state:
-        if st.session_state.import_success:
-            st.success("✅ Data imported successfully! The dashboard has been updated with your new data.")
-        else:
-            st.error("❌ Import failed. Please check your file format and try again.")
-        del st.session_state.import_success
+    # Filter data
+    if len(date_range) == 2:
+        start_date, end_date = date_range
+        filtered_df = df[
+            (df['Company'].isin(companies)) &
+            (df['Date'].dt.date >= start_date) &
+            (df['Date'].dt.date <= end_date)
+        ]
+    else:
+        filtered_df = df[df['Company'].isin(companies)]
     
     # Main dashboard
     if filtered_df.empty:
@@ -402,91 +367,6 @@ def main():
         fig_stock.update_yaxes(title_text="Stock Price ($)")
         st.plotly_chart(fig_stock, use_container_width=True)
     
-    # Row 2: Profitability and Market Cap Distribution
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.subheader("💵 Net Income Trends")
-        fig_income = px.line(
-            filtered_df,
-            x='Date',
-            y='NetIncome',
-            color='Company',
-            color_discrete_map=COMPANY_COLORS,
-            title='Net Income Over Time'
-        )
-        fig_income.update_layout(height=400)
-        fig_income.update_yaxes(title_text="Net Income (Millions $)")
-        st.plotly_chart(fig_income, use_container_width=True)
-    
-    with col2:
-        st.subheader("🥧 Market Cap Distribution")
-        latest_marketcap_data = filtered_df.groupby('Company')['MarketCap'].last().reset_index()
-        fig_pie = px.pie(
-            latest_marketcap_data,
-            values='MarketCap',
-            names='Company',
-            color='Company',
-            color_discrete_map=COMPANY_COLORS,
-            title='Current Market Cap Distribution'
-        )
-        fig_pie.update_layout(height=400)
-        st.plotly_chart(fig_pie, use_container_width=True)
-    
-    # Row 3: Custom Metric Analysis and Growth
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.subheader(f"📉 {metric_option} Analysis")
-        fig_metric = px.line(
-            filtered_df,
-            x='Date',
-            y=metric_option,
-            color='Company',
-            color_discrete_map=COMPANY_COLORS,
-            title=f'{metric_option} Over Time'
-        )
-        fig_metric.update_layout(height=400)
-        st.plotly_chart(fig_metric, use_container_width=True)
-    
-    with col2:
-        st.subheader("📈 Year-over-Year Growth")
-        
-        # Calculate YoY growth for revenue
-        growth_data = []
-        for company in companies:
-            company_data = filtered_df[filtered_df['Company'] == company].copy()
-            company_data = company_data.sort_values('Date')
-            
-            for year in company_data['Year'].unique()[1:]:
-                current_year = company_data[company_data['Year'] == year]['Revenue'].sum()
-                previous_year = company_data[company_data['Year'] == year-1]['Revenue'].sum()
-                
-                if previous_year > 0:
-                    growth = ((current_year - previous_year) / previous_year) * 100
-                    growth_data.append({
-                        'Company': company,
-                        'Year': year,
-                        'Growth': growth
-                    })
-        
-        if growth_data:
-            growth_df = pd.DataFrame(growth_data)
-            fig_growth = px.bar(
-                growth_df,
-                x='Year',
-                y='Growth',
-                color='Company',
-                color_discrete_map=COMPANY_COLORS,
-                title='Revenue YoY Growth Rate (%)',
-                barmode='group'
-            )
-            fig_growth.update_layout(height=400)
-            fig_growth.update_yaxes(title_text="Growth Rate (%)")
-            st.plotly_chart(fig_growth, use_container_width=True)
-        else:
-            st.info("Not enough data to calculate year-over-year growth.")
-    
     # Detailed Data Table
     st.markdown("---")
     st.header("📋 Detailed Financial Data")
@@ -514,15 +394,6 @@ def main():
         file_name=f"faang_financial_data_{datetime.now().strftime('%Y%m%d')}.csv",
         mime="text/csv"
     )
-    
-    # Footer
-    st.markdown("---")
-    st.markdown("""
-        <div style='text-align: center; color: #666;'>
-            <p>💡 <strong>FAANG Financial Dashboard</strong> | Sample data for demonstration purposes</p>
-            <p>Data reflects quarterly financial metrics from 2020-2024</p>
-        </div>
-    """, unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
